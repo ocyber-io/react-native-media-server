@@ -1,18 +1,22 @@
 import * as React from 'react';
 
-import { StyleSheet, View, Text } from 'react-native';
-import { multiply } from 'react-native-media-server';
+import { StyleSheet, View } from 'react-native';
+import { ReactNativeMediaServer } from 'react-native-media-server';
+import { VideoPlayer } from './video-player';
 
 export default function App() {
-  const [result, setResult] = React.useState<number | undefined>();
-
   React.useEffect(() => {
-    multiply(3, 7).then(setResult);
+    const server = new ReactNativeMediaServer(8080);
+    server.start();
+
+    return () => {
+      server.stop();
+    };
   }, []);
 
   return (
     <View style={styles.container}>
-      <Text>Result: {result}</Text>
+      <VideoPlayer style={styles.videoPlayer} />
     </View>
   );
 }
@@ -23,9 +27,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  box: {
-    width: 60,
-    height: 60,
-    marginVertical: 20,
+  videoPlayer: {
+    width: '100%',
+    height: 400,
   },
 });

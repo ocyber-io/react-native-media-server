@@ -1,4 +1,4 @@
-package com.mediaserver;
+package io.ocyber.mediaserver;
 
 import androidx.annotation.NonNull;
 

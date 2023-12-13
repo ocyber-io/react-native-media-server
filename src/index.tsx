@@ -1,9 +1,9 @@
 import {
-  NativeModules,
-  Platform,
   AppState,
   type AppStateStatus,
   type NativeEventSubscription,
+  NativeModules,
+  Platform,
 } from 'react-native';
 
 const LINKING_ERROR =
@@ -35,9 +35,24 @@ interface MediaServerOptions {
 }
 
 export class ReactNativeMediaServer {
+  private static serverPort: number = 8080;
+
+  static proxyURL(url: string) {
+    const baseURLMatch = url.match(/^https?:\/\/[^/]+/);
+    if (!baseURLMatch) {
+      throw new Error('Invalid URL format');
+    }
+    const [baseURL] = baseURLMatch;
+    const modifiedURL = url.replace(
+      baseURL,
+      `http://127.0.0.1:${this.serverPort}`
+    );
+    return `${modifiedURL}?baseURL=${encodeURIComponent(baseURL)}`;
+  }
+
   private readonly defaultValues: MediaServerDefault = {
     port: 8080,
-    root: null,
+    root: '',
     localhost: 'http://127.0.0.1:',
   };
   private readonly defaultOptions: MediaServerOptions = {
@@ -63,6 +78,7 @@ export class ReactNativeMediaServer {
       this.localOnly = this.defaultOptions.localOnly;
       this.keepAlive = this.defaultOptions.keepAlive;
     }
+    ReactNativeMediaServer.serverPort = this.port;
     this.started = false;
     this.origin = undefined;
   }
@@ -131,4 +147,8 @@ export class ReactNativeMediaServer {
       this.stop();
     }
   };
+}
+
+export function proxyMediaURL(url: string) {
+  return ReactNativeMediaServer.proxyURL(url);
 }

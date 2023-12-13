@@ -3,20 +3,23 @@ import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ReactNativeMediaServer } from 'react-native-media-server';
 import { VideoPlayer } from './video-player';
+import { useState } from 'react';
 
 export default function App() {
+  const [loading, setLoading] = useState(true);
   React.useEffect(() => {
+    setLoading(true);
     const server = new ReactNativeMediaServer(8080);
     server.start();
-
+    setLoading(false);
     return () => {
       server.stop();
     };
-  }, []);
+  }, [setLoading]);
 
   return (
     <View style={styles.container}>
-      <VideoPlayer style={styles.videoPlayer} />
+      {!loading && <VideoPlayer style={styles.videoPlayer} />}
     </View>
   );
 }
@@ -30,5 +33,6 @@ const styles = StyleSheet.create({
   videoPlayer: {
     width: '100%',
     height: 400,
+    objectFit: 'contain',
   },
 });

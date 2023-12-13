@@ -29,6 +29,112 @@ RCT_EXPORT_MODULE();
     return dispatch_queue_create("io.ocyber.mediaserver", DISPATCH_QUEUE_SERIAL);
 }
 
++ (void)downloadFileFromURL: (NSURL *)fileURL pathToSave:(NSString *) pathToSave  byteRange:(NSRange) byteRange{
+    NSLog(@"Downloading Started For File: %@", fileURL);
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_group_enter(group);
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:fileURL];
+    if(byteRange.location != NSNotFound){
+        NSString *range = [
+            NSString stringWithFormat:@"bytes=%lu-%lu",
+           (unsigned long)byteRange.location,
+           (unsigned long)(byteRange.location + byteRange.length - 1)
+        ];
+        [request setValue:range forHTTPHeaderField:@"Range"];
+    }
+    NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration];
+    NSURLSessionDataTask *downloadTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            NSLog(@"Error downloading file with byte range: %@", error);
+            dispatch_group_leave(group);
+            return;
+        }
+        
+        // Handle the downloaded data here
+        // For example, save it to a file
+        [data writeToFile:pathToSave atomically:YES];
+        
+        NSLog(@"File downloaded successfully at path: %@", pathToSave);
+        dispatch_group_leave(group);
+    }];
+    
+    [downloadTask resume];
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+}
+
+
++ (NSURL *)generateFileURL: (NSString *)baseURLString pathname:(NSString *) pathname {
+    NSString *cleanedBaseURLString = [baseURLString stringByReplacingOccurrencesOfString:@"/$" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, [baseURLString length])];
+    NSString *cleanedPathname = [pathname stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]];
+    NSURL *baseURL = [NSURL URLWithString:cleanedBaseURLString];
+    NSURL *completeURL = [baseURL URLByAppendingPathComponent:cleanedPathname];
+    return completeURL;
+}
+
++ (NSString *) getDirectoryPath: (NSString *) filePath {
+    return [filePath stringByDeletingLastPathComponent];
+}
+
++ (NSString *) getBaseURlFilePath: (NSString *) directoryPath {
+    return [directoryPath stringByAppendingPathComponent:@"baseURL.txt"];
+}
+
++ (NSString *) getBaseURIFromDirectory: (NSString *) directoryPath {
+    NSString* bastURLFile = [self getBaseURlFilePath:directoryPath];
+    NSString *baseURLString = [NSString stringWithContentsOfFile:bastURLFile encoding:NSUTF8StringEncoding error:nil];
+    if (baseURLString) {
+        NSString *trimmedBaseURL = [baseURLString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        return trimmedBaseURL;
+    }
+    return nil;
+}
+
++ (void) addBaseURLFileToDirectory: (NSString *) directoryPath baseURL:(NSString *) baseURL {
+    if(baseURL != nil){
+        NSString* bastURLFile = [self getBaseURlFilePath:directoryPath];
+        NSError *error = nil;
+        NSData *data = [baseURL dataUsingEncoding:NSUTF8StringEncoding];
+        BOOL success = [data writeToFile:bastURLFile options:NSDataWritingAtomic error:&error];
+        if (success) {
+            NSLog(@"Text written to file successfully at path: %@", bastURLFile);
+        } else {
+            NSLog(@"Error writing text to file: %@", error);
+        }
+    }
+}
+
++ (void) createDirectoryIfNotExist: (NSString *) filePath {
+    NSString * directoryPath = [self getDirectoryPath:filePath];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL isDirectory;
+    BOOL exists = [fileManager fileExistsAtPath:directoryPath isDirectory:&isDirectory];
+    NSLog(@"isDirectory: %d, exists: %d", isDirectory, exists);
+    if (!exists || !isDirectory) {
+        NSError *error = nil;
+        BOOL success = [fileManager createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:&error];
+        
+        if (!success) {
+            NSLog(@"Error creating directory: %@", error);
+            return;
+        } else {
+            NSLog(@"created directory: %@", directoryPath);
+        }
+    }
+}
+
++ (NSString *) getOrCreateBaseURI: (NSString *) directoryPath baseURL:(NSString *) baseURL {
+    [self addBaseURLFileToDirectory:directoryPath baseURL:baseURL];
+    return [self getBaseURIFromDirectory:directoryPath];
+}
+
++ (BOOL) fileExistsAtPath: (NSString *) filePath {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL fileExists = [fileManager fileExistsAtPath:filePath];
+    return fileExists;
+}
+
+
 
 RCT_EXPORT_METHOD(start: (NSString *)port
                   root:(NSString *)optroot
@@ -40,13 +146,13 @@ RCT_EXPORT_METHOD(start: (NSString *)port
     NSString * root;
 
     if( [optroot isEqualToString:@"DocumentDir"] ){
-        root = [NSString stringWithFormat:@"%@", [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0] ];
+        root = [NSString stringWithFormat:@"%@", [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] ];
     } else if( [optroot isEqualToString:@"BundleDir"] ){
         root = [NSString stringWithFormat:@"%@", [[NSBundle mainBundle] bundlePath] ];
     } else if([optroot hasPrefix:@"/"]) {
         root = optroot;
     } else {
-        root = [NSString stringWithFormat:@"%@/%@", [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0], optroot ];
+        root = [NSString stringWithFormat:@"%@/%@", [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0], optroot ];
     }
 
 
@@ -92,19 +198,32 @@ RCT_EXPORT_METHOD(start: (NSString *)port
         NSURL *fileURL = [NSURL fileURLWithPath:request.path];
         NSString *path = [[fileURL URLByDeletingLastPathComponent] path];
         NSString *filename = [fileURL lastPathComponent];
+        
+        
+        
+        GCDWebServerResponse* response = nil;
+        
+        NSString* filePath = [directoryPath stringByAppendingPathComponent:GCDWebServerNormalizePath([request.path substringFromIndex:basePath.length])];
+        
+        [MediaServer createDirectoryIfNotExist:filePath];
+        NSString * mediaDirectoryPath = [MediaServer getDirectoryPath:filePath];
+        NSString * baseURL = [MediaServer getOrCreateBaseURI:mediaDirectoryPath baseURL:request.query[@"baseURL"]];
+        if(baseURL != nil) {
+            NSURL * fileCloudURL = [MediaServer generateFileURL:baseURL pathname:request.path];
+            BOOL exists = [MediaServer fileExistsAtPath:filePath];
+            if(!exists){
+                [MediaServer downloadFileFromURL:fileCloudURL pathToSave:filePath byteRange:request.byteRange];
+            }
+            NSLog(@"File Cloud URL: %@", fileCloudURL);
+        }
+        
 
 
         NSLog(@"File Path: %@", path);
         NSLog(@"File Name: %@", filename);
-        NSLog(@"Request Method: %@", request.method);
-        NSLog(@"Request URL: %@", request.URL);
-        NSLog(@"Request Headers: %@", request.headers);
-        NSLog(@"Query: %@", request.query);
-        NSLog(@"Path: %@", request.path);
-        NSLog(@"Content Type: %@", request.contentType);
         
-        GCDWebServerResponse* response = nil;
-        NSString* filePath = [directoryPath stringByAppendingPathComponent:GCDWebServerNormalizePath([request.path substringFromIndex:basePath.length])];
+//        [MediaServer downloadFileFromURL:fileCloudURL pathToSave:filePath byteRange:request.byteRange];
+        NSLog(@"File Path Generated %@", filePath);
         NSString* fileType = [[[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:NULL] fileType];
         if (fileType) {
           if ([fileType isEqualToString:NSFileTypeDirectory]) {

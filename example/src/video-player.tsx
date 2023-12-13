@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { VLCPlayer } from 'react-native-vlc-media-player';
+import { proxyMediaURL } from 'react-native-media-server';
 
 interface Props {
   style: StyleProp<ViewStyle>;
@@ -20,7 +21,9 @@ export function VideoPlayer(props: Props) {
       <VLCPlayer
         style={props.style}
         source={{
-          uri: 'http://127.0.0.1:8080/reup-staging-convert/store/new/files/1694776798298/convert.m3u8?baseURL=https://s3.us-east-1.amazonaws.com',
+          uri: proxyMediaURL(
+            'https://ocyber.s3.amazonaws.com/fox-and-bird-segmented/fox-and-bird.m3u8'
+          ),
         }}
         onBuffering={(e) => {
           console.log('Buffered', e);
@@ -44,9 +47,5 @@ const styles = StyleSheet.create({
   },
   text: {
     color: 'white',
-  },
-  videoPlayer: {
-    width: '100%',
-    height: 400,
   },
 });

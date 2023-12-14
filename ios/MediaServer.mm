@@ -146,18 +146,19 @@ RCT_EXPORT_METHOD(start: (NSString *)port
     NSString * root;
 
     if( [optroot isEqualToString:@"DocumentDir"] ){
-        root = [NSString stringWithFormat:@"%@", [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] ];
+        root = [NSString stringWithFormat:@"%@", [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0] ];
     } else if( [optroot isEqualToString:@"BundleDir"] ){
         root = [NSString stringWithFormat:@"%@", [[NSBundle mainBundle] bundlePath] ];
     } else if([optroot hasPrefix:@"/"]) {
         root = optroot;
     } else {
-        root = [NSString stringWithFormat:@"%@/%@", [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0], optroot ];
+        root = [NSString stringWithFormat:@"%@/%@", [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0], optroot ];
     }
 
 
     if(root && [root length] > 0) {
         self.www_root = root;
+        [MediaServer createDirectoryIfNotExist:root];
     }
 
     if(port && [port length] > 0) {

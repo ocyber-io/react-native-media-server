@@ -7,8 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { VLCPlayer } from 'react-native-vlc-media-player';
-import { proxyMediaURL } from 'react-native-media-server';
+import { MediaPlayer } from './media-player';
 
 interface Props {
   style: StyleProp<ViewStyle>;
@@ -18,18 +17,10 @@ export function VideoPlayer(props: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Video Player</Text>
-      <VLCPlayer
+      <MediaPlayer
         style={props.style}
         source={{
-          uri: proxyMediaURL(
-            'https://ocyber.s3.amazonaws.com/fox-and-bird-segmented/fox-and-bird.m3u8'
-          ),
-        }}
-        onBuffering={(e) => {
-          console.log('Buffered', e);
-        }}
-        onLoad={(e) => {
-          console.log('Loaded', e);
+          uri: 'https://ocyber.s3.amazonaws.com/fox-and-bird-segmented/fox-and-bird.m3u8',
         }}
         onError={(e) => {
           console.log('Error', e);
@@ -43,7 +34,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     height: 500,
-    backgroundColor: 'red',
+    backgroundColor: 'black',
   },
   text: {
     color: 'white',

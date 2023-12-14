@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { M3U8Manager } from './m3u8-manager';
+import { MediaManager } from './media-manager';
 import { proxyMediaURL } from 'react-native-media-server';
 
-interface M3U8ManagerState {
+interface MediaManagerState {
   loading: boolean;
   profileLoading: boolean;
   proxyURL: string;
@@ -10,18 +10,24 @@ interface M3U8ManagerState {
   changeResolution(width: number, height: number): void;
   changeBandwidth(bandwidth: number): void;
   changeIndex(index: number): void;
+  changeProgress(currentTime: number): void;
 }
-export function useM3U8Manager(defaultUri: string): M3U8ManagerState {
+export function useMediaManager(defaultUri: string): MediaManagerState {
   const [loading, setLoading] = useState<boolean>(true);
   const [profileLoading, setProfileLoading] = useState<boolean>(true);
   const [url, setURL] = useState<string>(defaultUri);
   const [proxyURL, setProxyURL] = useState<string>('');
-  const [manager, setManager] = useState<M3U8Manager>(null);
+  const [manager, setManager] = useState<MediaManager>(null);
 
   useEffect(() => {
-    const m3u8Manager = new M3U8Manager(url);
+    const m3u8Manager = new MediaManager(url);
     setManager(m3u8Manager);
     setProxyURL(m3u8Manager.proxyURL);
+    const worker = m3u8Manager.downloadingWorker();
+    worker.start();
+    return () => {
+      worker.terminate();
+    };
   }, [url, setManager, setProxyURL]);
 
   useEffect(() => {
@@ -87,6 +93,13 @@ export function useM3U8Manager(defaultUri: string): M3U8ManagerState {
     [manager]
   );
 
+  const changeProgress = useCallback(
+    (currentTime: number) => {
+      manager.downloadNext(currentTime);
+    },
+    [manager]
+  );
+
   return {
     loading,
     profileLoading,
@@ -95,5 +108,6 @@ export function useM3U8Manager(defaultUri: string): M3U8ManagerState {
     changeBandwidth,
     changeIndex,
     changeResolution,
+    changeProgress,
   };
 }

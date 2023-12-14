@@ -5,10 +5,13 @@ import {
   type ByteRange,
   type Segment,
 } from 'm3u8-parser';
+import { Queue } from './queue';
+import { DownloadingWorker } from './downloading-worker';
 export interface MediaSegment {
   byteRange: ByteRange;
   uri: string;
   duration: number;
+  downloaded: boolean;
 }
 
 export interface M3U8MediaSegmentType {
@@ -39,7 +42,9 @@ interface MediaURLRecord {
   mediaSegments: M3U8MediaSegmentType[];
 }
 
-export class M3U8Manager {
+export class MediaManager {
+  private downloadingQueue: Queue<M3U8MediaSegmentType> =
+    new Queue<M3U8MediaSegmentType>();
   primary: Manifest;
   private currentIndex = 0;
   private readonly baseURL: string;
@@ -162,7 +167,12 @@ export class M3U8Manager {
       if ('uri' in map) {
         const uri = map.uri;
         const byteRange = map.byterange;
-        return { uri, duration: segment.duration, byteRange };
+        return {
+          uri,
+          duration: segment.duration,
+          byteRange,
+          downloaded: false,
+        };
       }
     }
     return null;
@@ -171,7 +181,7 @@ export class M3U8Manager {
     const uri = segment.uri;
     const byteRange = segment.byterange;
     const duration = segment.duration;
-    return { uri, byteRange, duration };
+    return { uri, byteRange, duration, downloaded: false };
   }
 
   private generateSegmentMap(profile: MediaURLRecord) {
@@ -194,9 +204,9 @@ export class M3U8Manager {
           videoInitial: this.getInitialMediaSegment(video, segmentIndex),
           audio: this.getMediaSegment(audio),
           video: this.getMediaSegment(video),
-          timeStart: startTime,
-          timeEnd: startTime + video.duration,
-          duration: video.duration,
+          timeStart: startTime * 1000,
+          timeEnd: (startTime + video.duration) * 1000,
+          duration: video.duration * 1000,
           lastSegment:
             segmentIndex === profile.videoManifest.segments.length - 1,
         };
@@ -220,6 +230,23 @@ export class M3U8Manager {
     parser.push(m3u8Text);
     parser.end();
     return parser.manifest;
+  }
+  private async downloadMediaFile(segment: MediaSegment) {
+    const url = `${this.baseURL}${segment.uri}`;
+    const headers: Headers = new Headers();
+    if (segment.byteRange) {
+      headers.set(
+        'Range',
+        `bytes=${segment.byteRange.offset}-${
+          segment.byteRange.offset + segment.byteRange.length - 1
+        }`
+      );
+    }
+    const request = new Request(url, {
+      headers: headers,
+      mode: 'no-cors',
+    });
+    return await fetch(request);
   }
 
   waitForM3U8() {
@@ -257,5 +284,62 @@ export class M3U8Manager {
   async changePlaylistByIndex(index: number) {
     this.index = index;
     await this.downloadCurrentIndexProfile();
+  }
+
+  private findSegmentIndexByTime(currentTime: number) {
+    return this.currentProfile.mediaSegments.findIndex((item) => {
+      return item.timeStart <= currentTime && item.timeEnd >= currentTime;
+    });
+  }
+
+  downloadingWorker() {
+    const downloadingWorker = new DownloadingWorker();
+    downloadingWorker.worker = async (self) => {
+      while (
+        (await this.downloadingQueue.waitForNextAvailable()) &&
+        self.open
+      ) {
+        const item = this.downloadingQueue.dequeue();
+        console.log(item);
+        if (item.videoInitial) {
+          await this.downloadMediaFile(item.videoInitial);
+        }
+        if (item.audioInitial) {
+          await this.downloadMediaFile(item.audioInitial);
+        }
+        if (item.video) {
+          await this.downloadMediaFile(item.video);
+        }
+        if (item.audio) {
+          await this.downloadMediaFile(item.audio);
+        }
+      }
+    };
+    return downloadingWorker;
+  }
+
+  downloadNext(currentTime: number) {
+    const segmentIndex = this.findSegmentIndexByTime(currentTime);
+    if (segmentIndex !== -1) {
+      this.downloadByIndex(segmentIndex);
+      this.downloadByIndex(segmentIndex + 1);
+      this.downloadByIndex(segmentIndex + 2);
+    }
+  }
+
+  downloadByIndex(index: number) {
+    if (index >= this.currentProfile.mediaSegments.length) {
+      return;
+    }
+    const segment = this.currentProfile.mediaSegments[index];
+    if (segment) {
+      const dequeued = this.downloadingQueue.isDeQueued(
+        (item) =>
+          item.baseURL === segment.baseURL && item.index === segment.index
+      );
+      if (!dequeued) {
+        this.downloadingQueue.enqueue(segment);
+      }
+    }
   }
 }

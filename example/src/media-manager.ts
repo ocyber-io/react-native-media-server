@@ -287,6 +287,9 @@ export class MediaManager {
   }
 
   private findSegmentIndexByTime(currentTime: number) {
+    if (!this.currentProfile) {
+      return -1;
+    }
     return this.currentProfile.mediaSegments.findIndex((item) => {
       return item.timeStart <= currentTime && item.timeEnd >= currentTime;
     });
@@ -328,7 +331,10 @@ export class MediaManager {
   }
 
   downloadByIndex(index: number) {
-    if (index >= this.currentProfile.mediaSegments.length) {
+    if (
+      !this.currentProfile &&
+      index >= this.currentProfile.mediaSegments.length
+    ) {
       return;
     }
     const segment = this.currentProfile.mediaSegments[index];

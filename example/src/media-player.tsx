@@ -6,7 +6,7 @@ import {
 } from 'react-native-vlc-media-player';
 import React, { useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useMediaManager } from './useMediaManager';
+import { useMediaManager } from './use-media-manager';
 
 interface Props extends VLCPlayerProps {}
 

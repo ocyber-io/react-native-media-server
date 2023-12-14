@@ -9,7 +9,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   React.useEffect(() => {
     setLoading(true);
-    const server = new ReactNativeMediaServer(8080);
+    const server = new ReactNativeMediaServer(8080, 'www');
     server.start();
     setLoading(false);
     return () => {

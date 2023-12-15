@@ -59,6 +59,7 @@ buck-out/
 \.buckd/
 android/app/libs
 android/keystores/debug.keystore
+example/android/app/release
 
 # Yarn
 .yarn/*

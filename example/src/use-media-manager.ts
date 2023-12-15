@@ -11,6 +11,7 @@ interface MediaManagerState {
   changeBandwidth(bandwidth: number): void;
   changeIndex(index: number): void;
   changeProgress(currentTime: number): void;
+  loadFirstProfile(): void;
 }
 export function useMediaManager(defaultUri: string): MediaManagerState {
   const [loading, setLoading] = useState<boolean>(true);
@@ -100,6 +101,12 @@ export function useMediaManager(defaultUri: string): MediaManagerState {
     [manager]
   );
 
+  const loadFirstProfile = useCallback(() => {
+    if (manager && !loading) {
+      manager.loadFirstProfileIfNotLoaded();
+    }
+  }, [manager, loading]);
+
   return {
     loading,
     profileLoading,
@@ -109,5 +116,6 @@ export function useMediaManager(defaultUri: string): MediaManagerState {
     changeIndex,
     changeResolution,
     changeProgress,
+    loadFirstProfile,
   };
 }

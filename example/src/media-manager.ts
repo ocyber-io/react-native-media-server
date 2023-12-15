@@ -348,4 +348,10 @@ export class MediaManager {
       }
     }
   }
+
+  loadFirstProfileIfNotLoaded() {
+    if (!this.currentProfile) {
+      this.changePlaylistByIndex(0);
+    }
+  }
 }

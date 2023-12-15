@@ -4,16 +4,35 @@ import {
   VLCPlayer,
   type VLCPlayerProps,
 } from 'react-native-vlc-media-player';
-import React, { useCallback } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
+import {
+  ActivityIndicator,
+  type StyleProp,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import { useMediaManager } from './use-media-manager';
 
-interface Props extends VLCPlayerProps {}
+interface Props extends VLCPlayerProps {
+  containerStyle: StyleProp<ViewStyle>;
+}
 
 export function MediaPlayer(props: Props) {
+  const ref = useRef<VLCPlayer>();
   const { source, ...rest } = props;
-  const { loading, proxyURL, changeResolution, changeProgress } =
-    useMediaManager(source.uri);
+  const {
+    loading,
+    proxyURL,
+    changeResolution,
+    changeProgress,
+    loadFirstProfile,
+  } = useMediaManager(source.uri);
+
+  useEffect(() => {
+    if (props.paused) {
+      loadFirstProfile();
+    }
+  }, [loadFirstProfile, props.paused]);
 
   const handleOnLoadEvent = useCallback(
     (event: VideoInfo) => {
@@ -33,20 +52,25 @@ export function MediaPlayer(props: Props) {
   );
   if (loading) {
     return (
-      <View style={props.style}>
+      <View style={props.containerStyle}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
+
   return (
-    <VLCPlayer
-      style={props.style}
-      source={{
-        uri: proxyURL,
-      }}
-      onLoad={handleOnLoadEvent}
-      onProgress={handleProgress}
-      {...rest}
-    />
+    <View style={props.containerStyle}>
+      <VLCPlayer
+        ref={ref}
+        style={props.style}
+        source={{
+          uri: proxyURL,
+        }}
+        autoplay={false}
+        onLoad={handleOnLoadEvent}
+        onProgress={handleProgress}
+        {...rest}
+      />
+    </View>
   );
 }

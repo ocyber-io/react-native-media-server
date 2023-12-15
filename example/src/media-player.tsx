@@ -63,10 +63,10 @@ export function MediaPlayer(props: Props) {
       <VLCPlayer
         ref={ref}
         style={props.style}
+        repeat={true}
         source={{
           uri: proxyURL,
         }}
-        autoplay={false}
         onLoad={handleOnLoadEvent}
         onProgress={handleProgress}
         {...rest}

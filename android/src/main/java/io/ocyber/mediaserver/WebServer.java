@@ -168,14 +168,18 @@ public class WebServer extends NanoHTTPD {
       fos.write(buffer);
       fos.flush();
       fos.close();
+      Log.d("Media URL", url);
       listener.onDownloadComplete(newChunkedResponse(Response.Status.OK, mimeType, new FileInputStream(outputFile)));
 
 
     } catch(FileNotFoundException e) {
+
+      Log.d("Media URL", "FNF");
       listener.onDownloadComplete(newFixedLengthResponse("404: Resource Not Found"));
       e.printStackTrace();
 
     } catch (IOException e) {
+      Log.d("Media URL", "IO Exception");
       listener.onDownloadComplete(newFixedLengthResponse("404: Resource Not Found"));
       e.printStackTrace();
 

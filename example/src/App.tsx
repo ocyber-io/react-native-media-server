@@ -6,29 +6,30 @@ import { Dimensions, StyleSheet, View } from 'react-native';
 import { ReactNativeMediaServer } from 'react-native-media-server';
 import { MediaPlayer } from './media-player';
 import Carousel from 'react-native-reanimated-carousel';
+// import type { VLCPlayerProps } from 'react-native-vlc-media-player';
 
 let videoUrlList = [
   'https://s3.us-east-1.amazonaws.com/reup-staging-convert/user/new/profileImage/1679657781993/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1681895218275/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1682587586875/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1682590765881/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1683192601331/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1692572353233/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693867174405/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693867614284/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693890752704/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693908348889/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694609968157/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694609990023/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694768481418/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694776798298/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1695131577099/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1695214529386/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1696258223369/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1697592751222/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1681895218275/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1682587586875/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1682590765881/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1683192601331/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1692572353233/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693867174405/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693867614284/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693890752704/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1693908348889/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694609968157/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694609990023/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694768481418/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1694776798298/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1695131577099/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1695214529386/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1696258223369/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1697592751222/convert.m3u8',
   'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1698110064924/convert.m3u8',
   'https://s3.us-east-1.amazonaws.com/reup-staging-convert/store/new/files/1698226307958/convert.m3u8',
-  'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1698895348351/convert.m3u8',
+  // 'https://s3.us-east-1.amazonaws.com/reup-staging-convert/review/new/video/1698895348351/convert.m3u8',
 ];
 
 interface VideoItem {
@@ -81,6 +82,7 @@ export default function App() {
           }}
           scrollAnimationDuration={0}
           renderItem={(item) => {
+            const seek = currentIndex !== item.index || muted ? 0 : undefined;
             return (
               <MediaPlayer
                 containerStyle={styles.containerStyle}
@@ -88,6 +90,7 @@ export default function App() {
                 source={{ uri: item.item.uri }}
                 resizeMode="cover"
                 muted={currentIndex !== item.index || muted}
+                seek={seek}
               />
             );
           }}

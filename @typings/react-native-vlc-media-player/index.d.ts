@@ -164,6 +164,7 @@ declare module 'react-native-vlc-media-player' {
      * Object that contains the uri of a video or song to play eg
      */
     source: VLCPlayerSource;
+    autoplay?: boolean;
 
     /**
      * local subtitle file path，if you want to hide subtitle,

@@ -13,6 +13,9 @@
     "m3u8-parser": "^7.1.0",
     "react": "18.2.0",
     "react-native": "0.73.0",
+    "react-native-gesture-handler": "^2.14.0",
+    "react-native-reanimated": "^3.6.1",
+    "react-native-reanimated-carousel": "^3.5.1",
     "react-native-vlc-media-player": "^1.0.61"
   },
   "devDependencies": {
